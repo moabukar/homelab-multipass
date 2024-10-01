@@ -3,6 +3,7 @@
 GREEN := \033[0;32m
 NC := \033[0m # No Color
 
+## Setup everything
 all: setup_multipass generate_inventory setup_master setup_nodes post_install
 
 help:
@@ -38,6 +39,7 @@ post_install: setup_nodes
 	@echo "${GREEN}Running post-installation tasks...${NC}"
 	ansible-playbook playbooks/post.yml
 
+## Destroy the entire VMs
 destroy:
 	@echo "${GREEN}Destroying the entire cluster...${NC}"
 	./destroy.sh

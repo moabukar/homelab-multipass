@@ -10,20 +10,16 @@
   command: kubectl create namespace argocd
   ignore_errors: yes
 
-- name: Install ArgoCD
-  command: >
-    helm install argocd argo/argo-cd --namespace argocd --create-namespace --wait
-  register: install_result
-  changed_when: "'STATUS: deployed' in install_result.stdout"
-
-- name: Get ArgoCD admin password
-  command: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}"
-  register: argocd_secret
+- name: Check if ArgoCD is already installed
+  command: helm list -n argocd -f argocd --kubeconfig /etc/rancher/k3s/k3s.yaml
+  register: argocd_list_result
   changed_when: false
 
-- name: Display ArgoCD admin password
-  debug:
-    msg: "ArgoCD admin password: {{ argocd_secret.stdout | b64decode }}"
+- name: Install or upgrade ArgoCD
+  command: >
+    helm upgrade --install argocd argo/argo-cd --namespace argocd --create-namespace --wait --kubeconfig /etc/rancher/k3s/k3s.yaml {{ '--version ' + argocd_version if argocd_version is defined else '' }} --force
+  register: install_result
+  changed_when: true
 
 - name: Wait for ArgoCD server to be ready
   command: kubectl -n argocd get deployment argocd-server -o jsonpath='{.status.readyReplicas}'
@@ -33,11 +29,96 @@
   delay: 10
   changed_when: false
 
-- name: Get ArgoCD server NodePort
-  command: kubectl -n argocd get svc argocd-server -o jsonpath='{.spec.ports[0].nodePort}'
+- name: Check ArgoCD pod status
+  command: kubectl get pods -n argocd
+  register: argocd_pods
+  changed_when: false
+
+- name: Display ArgoCD pod status
+  debug:
+    var: argocd_pods.stdout_lines
+
+- name: Update ArgoCD server service to NodePort
+  command: >
+    kubectl patch svc argocd-server -n argocd -p ' {"spec": {
+      "type": "NodePort",
+      "ports": [
+        {"port": 80, "targetPort": 8080, "name": "http"},
+        {"port": 443, "targetPort": 8080, "name": "https"}
+      ]
+    }}'
+  changed_when: true
+
+- name: Create temporary file for ArgoCD Ingress
+  tempfile:
+    state: file
+    suffix: argocd_ingress.yaml
+  register: temp_ingress_file
+
+- name: Write ArgoCD Ingress configuration
+  copy:
+    dest: "{{ temp_ingress_file.path }}"
+    content: "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: argocd-server-ingress\n  namespace: argocd\n  annotations:\n    kubernetes.io/ingress.class: traefik\n    traefik.ingress.kubernetes.io/router.entrypoints: web\n    traefik.ingress.kubernetes.io/router.middlewares: argocd-strip-prefix@kubernetescrd\nspec:\n  rules:\n  - host: \"argocd.{{ ansible_default_ipv4.address }}.nip.io\"\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: argocd-server\n            port: \n              number: 80\n              #magic___^_^___line\n"
+- name: Apply ArgoCD Ingress
+  command: kubectl apply -f {{ temp_ingress_file.path }}
+  register: ingress_result
+  changed_when: "'created' in ingress_result.stdout or 'configured' in ingress_result.stdout"
+
+- name: Remove temporary Ingress file
+  file:
+    path: "{{ temp_ingress_file.path }}"
+    state: absent
+
+- name: Create Traefik Middleware for stripping prefix
+  copy:
+    dest: /tmp/argocd-strip-prefix-middleware.yaml
+    content: |
+      apiVersion: traefik.containo.us/v1alpha1
+      kind: Middleware
+      metadata:
+        name: argocd-strip-prefix
+        namespace: argocd
+      spec:
+        stripPrefix:
+          prefixes:
+            - /argocd
+
+- name: Apply Traefik Middleware
+  command: kubectl apply -f /tmp/argocd-strip-prefix-middleware.yaml
+  changed_when: true
+
+- name: Update ArgoCD ConfigMap to allow insecure access
+  command: >
+    kubectl patch configmap argocd-cmd-params-cm -n argocd --type merge -p '{"data":{"server.insecure":"true"}}'
+  changed_when: true
+
+- name: Restart ArgoCD server
+  command: kubectl rollout restart deployment argocd-server -n argocd
+  changed_when: true
+
+- name: Wait for ArgoCD server to be ready after restart
+  command: kubectl -n argocd get deployment argocd-server -o jsonpath='{.status.readyReplicas}'
+  register: argocd_ready
+  until: argocd_ready.stdout | int == 1
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Get ArgoCD NodePort
+  command: kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}'
   register: argocd_nodeport
   changed_when: false
 
-- name: Display ArgoCD server URL
+- name: Get ArgoCD admin password
+  command: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}"
+  register: argocd_password
+  changed_when: false
+
+- name: Display ArgoCD access information
   debug:
-    msg: "ArgoCD server URL: https://{{ ansible_host }}:{{ argocd_nodeport.stdout }}"
+    msg:
+    - "ArgoCD is now available at:"
+    - "http://{{ ansible_default_ipv4.address }}:{{ argocd_nodeport.stdout }}"
+    - "http://argocd.{{ ansible_default_ipv4.address }}.nip.io"
+    - "Admin username: admin"
+    - "Admin password: {{ argocd_password.stdout | b64decode }}"
