@@ -8,7 +8,6 @@ K8s cluster using Multipass, Ansible, and k3s. It provides a basic framework for
 
 - Multipass
 - Ansible
-- k3s
 
 ## Setup
 
@@ -20,4 +19,16 @@ make setup_nodes
 ## OR
 
 make all
+```
+
+## Check K8s is installed
+
+```bash
+
+multipass shell k8s-master
+kubectl get nodes
+
+## or
+multipass exec k8s-master -- kubectl get nodes
+
 ```

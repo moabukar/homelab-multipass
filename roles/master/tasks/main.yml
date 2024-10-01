@@ -34,3 +34,24 @@
   add_host:
     name: "k3s_master"
     k3s_master_ip: "{{ k3s_master_ip }}"
+
+- name: Create kubectl group
+  group:
+    name: kubectl
+    state: present
+  become: yes
+
+- name: Add ubuntu user to kubectl group
+  user:
+    name: ubuntu
+    groups: kubectl
+    append: yes
+  become: yes
+
+- name: Set permissions for kubeconfig
+  file:
+    path: /etc/rancher/k3s/k3s.yaml
+    owner: root
+    group: kubectl
+    mode: '0640'
+  become: yes
