@@ -17,7 +17,7 @@
 
 - name: Install or upgrade ArgoCD
   command: >
-    helm upgrade --install argocd argo/argo-cd --namespace argocd --create-namespace --wait --kubeconfig /etc/rancher/k3s/k3s.yaml {{ '--version ' + argocd_version if argocd_version is defined else '' }} --force
+    helm upgrade --install argocd argo/argo-cd --namespace argocd --create-namespace --wait --kubeconfig /etc/rancher/k3s/k3s.yaml {{ '--version ' + argocd_version if argocd_version is defined else '' }} --force --set server.insecure=true
   register: install_result
   changed_when: true
 
@@ -58,7 +58,7 @@
 - name: Write ArgoCD Ingress configuration
   copy:
     dest: "{{ temp_ingress_file.path }}"
-    content: "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: argocd-server-ingress\n  namespace: argocd\n  annotations:\n    kubernetes.io/ingress.class: traefik\n    traefik.ingress.kubernetes.io/router.entrypoints: web\n    traefik.ingress.kubernetes.io/router.middlewares: argocd-strip-prefix@kubernetescrd\nspec:\n  rules:\n  - host: \"argocd.{{ ansible_default_ipv4.address }}.nip.io\"\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: argocd-server\n            port: \n              number: 80\n              #magic___^_^___line\n"
+    content: "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: argocd-server-ingress\n  namespace: argocd\n  annotations:\n    kubernetes.io/ingress.class: traefik\n    traefik.ingress.kubernetes.io/router.entrypoints: web\n    traefik.ingress.kubernetes.io/router.tls: \"false\"\nspec:\n  rules:\n  - host: \"argocd.{{ ansible_default_ipv4.address }}.nip.io\"\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: argocd-server\n            port: \n              number: 80\n              #magic___^_^___line\n"
 - name: Apply ArgoCD Ingress
   command: kubectl apply -f {{ temp_ingress_file.path }}
   register: ingress_result
@@ -68,24 +68,6 @@
   file:
     path: "{{ temp_ingress_file.path }}"
     state: absent
-
-- name: Create Traefik Middleware for stripping prefix
-  copy:
-    dest: /tmp/argocd-strip-prefix-middleware.yaml
-    content: |
-      apiVersion: traefik.containo.us/v1alpha1
-      kind: Middleware
-      metadata:
-        name: argocd-strip-prefix
-        namespace: argocd
-      spec:
-        stripPrefix:
-          prefixes:
-            - /argocd
-
-- name: Apply Traefik Middleware
-  command: kubectl apply -f /tmp/argocd-strip-prefix-middleware.yaml
-  changed_when: true
 
 - name: Update ArgoCD ConfigMap to allow insecure access
   command: >
