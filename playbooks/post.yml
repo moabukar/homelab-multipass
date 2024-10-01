@@ -1,22 +1,54 @@
 - name: Post-installation tasks
   hosts: master
   become: yes
+  vars:
+    k3s_user: "{{ ansible_user }}" # This will use the user Ansible is connecting with
   tasks:
   - name: Ensure .kube directory exists
     file:
-      path: "{{ ansible_env.HOME }}/.kube"
+      path: "/home/{{ k3s_user }}/.kube"
       state: directory
       mode: '0755'
-    become: no
+      owner: "{{ k3s_user }}"
+      group: "{{ k3s_user }}"
+    become: yes
 
   - name: Copy k3s.yaml to user's home directory
     copy:
       src: /etc/rancher/k3s/k3s.yaml
-      dest: "{{ ansible_env.HOME }}/.kube/config"
+      dest: "/home/{{ k3s_user }}/.kube/config"
       remote_src: yes
-      owner: "{{ ansible_user }}"
-      group: "{{ ansible_user }}"
+      owner: "{{ k3s_user }}"
+      group: "{{ k3s_user }}"
       mode: '0600'
+    become: yes
+
+  - name: Replace https://localhost:6443 with actual IP in kubeconfig
+    replace:
+      path: "/home/{{ k3s_user }}/.kube/config"
+      regexp: 'https://127.0.0.1:6443'
+      replace: "https://{{ ansible_default_ipv4.address }}:6443"
+    become: yes
+
+  - name: Verify kubeconfig file exists
+    stat:
+      path: "/home/{{ k3s_user }}/.kube/config"
+    register: kubeconfig_stat
+
+  - name: Display kubeconfig file status
+    debug:
+      var: kubeconfig_stat
+
+  - name: Test kubectl
+    command: kubectl get nodes
+    become: yes
+    become_user: "{{ k3s_user }}"
+    register: kubectl_test
+    changed_when: false
+
+  - name: Display kubectl test result
+    debug:
+      var: kubectl_test.stdout_lines
 
   roles:
   - helm

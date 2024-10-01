@@ -12,6 +12,12 @@ K8s cluster using Multipass, Ansible, and k3s. It provides a basic framework for
 ## Setup
 
 ```bash
+## create group_vars/all.yml
+
+k3s_master_ip: 
+k3s_node_token: 
+
+## Run
 make setup_multipass
 make setup_master
 make setup_nodes

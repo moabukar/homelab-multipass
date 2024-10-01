@@ -24,3 +24,15 @@ ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 EOF
 
 echo "Inventory file generated successfully."
+
+# Create group_vars directory if it doesn't exist
+mkdir -p group_vars
+
+# Generate the all.yml file in group_vars
+cat > group_vars/all.yml <<EOF
+---
+k3s_master_ip: $master_ip
+k3s_node_token:
+EOF
+
+echo "group_vars/all.yml file generated successfully."
