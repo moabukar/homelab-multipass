@@ -1,0 +1,5 @@
+- name: Set up k3s nodes
+  hosts: nodes
+  roles:
+  - common
+  - nodes

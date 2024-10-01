@@ -1,0 +1,14 @@
+- name: Configure all nodes
+  hosts: all
+  roles:
+  - common
+
+- name: Set up k3s master
+  hosts: master
+  roles:
+  - k3s_master
+
+- name: Set up k3s nodes
+  hosts: nodes
+  roles:
+  - k3s_node

@@ -1,0 +1,30 @@
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Install required packages
+  apt:
+    name:
+    - curl
+    - apt-transport-https
+    - ca-certificates
+    state: present
+  become: yes
+
+- name: Set timezone
+  timezone:
+    name: UTC
+  become: yes
+
+- name: Disable swap
+  command: swapoff -a
+  become: yes
+
+- name: Remove swap from /etc/fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
+    replace: '#\1\2\3swap\4'
+    backup: yes
+  become: yes
