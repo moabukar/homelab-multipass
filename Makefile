@@ -3,7 +3,7 @@
 GREEN := \033[0;32m
 NC := \033[0m # No Color
 
-all: setup_master setup_nodes
+all: setup_multipass setup_master setup_nodes
 
 help:
 	@echo "Usage: make [target]"
@@ -15,13 +15,11 @@ help:
 	@echo "  ${GREEN}destroy${NC}      : Destroy the entire cluster"
 	@echo "  ${GREEN}all${NC}          : Run all steps (setup_master, setup_nodes)"
 
-## spin up the multipass instances
-
 setup_multipass:
 	@echo "${GREEN}Setting up multipass instances...${NC}"
 	./multipass-up.sh
 
-setup_master:
+setup_master: setup_multipass
 	@echo "${GREEN}Setting up k3s master node...${NC}"
 	ansible-playbook playbooks/k3s_master.yml
 

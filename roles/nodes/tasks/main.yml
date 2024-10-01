@@ -7,6 +7,6 @@
 - name: Install k3s agent
   command: /tmp/k3s_install.sh
   environment:
-    K3S_URL: "https://{{ hostvars[groups['master'][0]]['k3s_master_ip'] }}:6443"
-    K3S_TOKEN: "{{ hostvars[groups['master'][0]]['k3s_node_token'] }}"
+    K3S_URL: "https://{{ k3s_master_ip }}:6443"
+    K3S_TOKEN: "{{ k3s_node_token }}"
   become: yes

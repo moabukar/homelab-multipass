@@ -29,3 +29,8 @@
 - name: Get k3s master IP
   set_fact:
     k3s_master_ip: "{{ ansible_default_ipv4.address }}"
+
+- name: Register k3s master IP
+  add_host:
+    name: "k3s_master"
+    k3s_master_ip: "{{ k3s_master_ip }}"

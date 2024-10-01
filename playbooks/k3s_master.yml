@@ -3,3 +3,12 @@
   roles:
   - common
   - master
+  post_tasks:
+  - name: Set master facts
+    set_fact:
+      k3s_master_ip: "{{ ansible_default_ipv4.address }}"
+  - name: Save master IP to file
+    copy:
+      content: "k3s_master_ip: {{ k3s_master_ip }}\nk3s_node_token: {{ k3s_node_token }}"
+      dest: "{{ playbook_dir }}/../group_vars/all.yml"
+    delegate_to: localhost
