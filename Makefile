@@ -3,7 +3,7 @@
 GREEN := \033[0;32m
 NC := \033[0m # No Color
 
-all: setup_multipass setup_master setup_nodes
+all: setup_multipass setup_master setup_nodes post_install
 
 help:
 	@echo "Usage: make [target]"
@@ -26,6 +26,10 @@ setup_master: setup_multipass
 setup_nodes:
 	@echo "${GREEN}Setting up k3s worker nodes...${NC}"
 	ansible-playbook playbooks/k3s_nodes.yml
+
+post_install: setup_nodes
+	@echo "${GREEN}Running post-installation tasks...${NC}"
+	ansible-playbook playbooks/post.yml
 
 destroy:
 	@echo "${GREEN}Destroying the entire cluster...${NC}"

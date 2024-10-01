@@ -1,0 +1,5 @@
+- name: Post-installation tasks
+  hosts: master
+  roles:
+  - helm
+  - argocd

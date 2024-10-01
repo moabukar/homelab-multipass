@@ -1,0 +1,43 @@
+- name: Add Helm repository for ArgoCD
+  command: helm repo add argo https://argoproj.github.io/argo-helm
+  changed_when: false
+
+- name: Update Helm repositories
+  command: helm repo update
+  changed_when: false
+
+- name: Create namespace for ArgoCD
+  command: kubectl create namespace argocd
+  ignore_errors: yes
+
+- name: Install ArgoCD
+  command: >
+    helm install argocd argo/argo-cd --namespace argocd --create-namespace --wait
+  register: install_result
+  changed_when: "'STATUS: deployed' in install_result.stdout"
+
+- name: Get ArgoCD admin password
+  command: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}"
+  register: argocd_secret
+  changed_when: false
+
+- name: Display ArgoCD admin password
+  debug:
+    msg: "ArgoCD admin password: {{ argocd_secret.stdout | b64decode }}"
+
+- name: Wait for ArgoCD server to be ready
+  command: kubectl -n argocd get deployment argocd-server -o jsonpath='{.status.readyReplicas}'
+  register: argocd_ready
+  until: argocd_ready.stdout | int == 1
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Get ArgoCD server NodePort
+  command: kubectl -n argocd get svc argocd-server -o jsonpath='{.spec.ports[0].nodePort}'
+  register: argocd_nodeport
+  changed_when: false
+
+- name: Display ArgoCD server URL
+  debug:
+    msg: "ArgoCD server URL: https://{{ ansible_host }}:{{ argocd_nodeport.stdout }}"
