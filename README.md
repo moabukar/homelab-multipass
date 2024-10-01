@@ -16,4 +16,8 @@ K8s cluster using Multipass, Ansible, and k3s. It provides a basic framework for
 make setup_multipass
 make setup_master
 make setup_nodes
+
+## OR
+
+make all
 ```
