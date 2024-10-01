@@ -6,8 +6,8 @@ K8s cluster using Multipass, Ansible, and k3s. It provides a basic framework for
 
 ## Prerequisites
 
-- Multipass
-- Ansible
+- [Multipass](https://multipass.run/)
+- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/index.html)
 
 ## Setup
 
@@ -18,7 +18,7 @@ make setup_nodes
 
 ## OR
 
-make all
+make all ## to setup everything
 ```
 
 ## Check K8s is installed
