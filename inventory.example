@@ -1,9 +1,9 @@
 [master]
-k8s-master ansible_host=192.168.64.22
+k8s-master ansible_host=<master-ip> ## from multipass list
 
 [nodes]
-k8s-worker1 ansible_host=192.168.64.23
-k8s-worker2 ansible_host=192.168.64.24
+k8s-worker1 ansible_host=<worker1-ip> ## from multipass list
+k8s-worker2 ansible_host=<worker2-ip> ## from multipass list
 
 [all:vars]
 ansible_user=ubuntu
