@@ -1,5 +1,23 @@
 - name: Post-installation tasks
   hosts: master
+  become: yes
+  tasks:
+  - name: Ensure .kube directory exists
+    file:
+      path: "{{ ansible_env.HOME }}/.kube"
+      state: directory
+      mode: '0755'
+    become: no
+
+  - name: Copy k3s.yaml to user's home directory
+    copy:
+      src: /etc/rancher/k3s/k3s.yaml
+      dest: "{{ ansible_env.HOME }}/.kube/config"
+      remote_src: yes
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: '0600'
+
   roles:
   - helm
   - argocd

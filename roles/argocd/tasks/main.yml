@@ -10,7 +10,7 @@
   file:
     path: "{{ ansible_env.HOME }}/.kube"
     state: directory
-    mode: '0700'
+    mode: '0755'
 
 - name: Copy k3s.yaml to user's home directory
   copy:
@@ -25,13 +25,13 @@
   ignore_errors: yes
 
 - name: Check if ArgoCD is already installed
-  command: helm list -n argocd -f argocd --kubeconfig /etc/rancher/k3s/k3s.yaml
+  command: helm list -n argocd -f argocd
   register: argocd_list_result
   changed_when: false
 
 - name: Install or upgrade ArgoCD
   command: >
-    helm upgrade --install argocd argo/argo-cd --namespace argocd --create-namespace --wait --kubeconfig /etc/rancher/k3s/k3s.yaml {{ '--version ' + argocd_version if argocd_version is defined else '' }} --force --set server.insecure=true
+    helm upgrade --install argocd argo/argo-cd --namespace argocd --create-namespace --wait {{ '--version ' + argocd_version if argocd_version is defined else '' }} --force --set server.insecure=true
   register: install_result
   changed_when: true
 
