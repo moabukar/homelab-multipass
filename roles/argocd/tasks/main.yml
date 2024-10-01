@@ -6,6 +6,20 @@
   command: helm repo update
   changed_when: false
 
+- name: Ensure .kube directory exists
+  file:
+    path: "{{ ansible_env.HOME }}/.kube"
+    state: directory
+    mode: '0700'
+
+- name: Copy k3s.yaml to user's home directory
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ ansible_env.HOME }}/.kube/config"
+    remote_src: yes
+    mode: '0600'
+  become: yes
+
 - name: Create namespace for ArgoCD
   command: kubectl create namespace argocd
   ignore_errors: yes

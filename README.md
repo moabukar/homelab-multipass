@@ -30,5 +30,12 @@ kubectl get nodes
 
 ## or
 multipass exec k8s-master -- kubectl get nodes
-
 ```
+
+## Ansible setup
+
+![Homelab Multipass Ansible](./images/v1.png)
+
+## ArgoCD setup
+
+![Homelab Multipass ArgoCD](./images/argocd.png)
