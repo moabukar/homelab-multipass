@@ -1,0 +1,3 @@
+.DS_Store
+.env
+group_vars/all.yml
