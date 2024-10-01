@@ -24,7 +24,7 @@ setup_multipass:
 
 generate_inventory: setup_multipass
 	@echo "${GREEN}Generating Ansible inventory file...${NC}"
-	./generate_inventory.sh
+	./obtain-ips.sh
 
 setup_master: generate_inventory
 	@echo "${GREEN}Setting up k3s master node...${NC}"
