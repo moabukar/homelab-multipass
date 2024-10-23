@@ -4,6 +4,8 @@
 
 K8s cluster using Multipass, Ansible, and k3s. It provides a basic framework for deploying and managing a Kubernetes cluster on a set of Ubuntu VMs.
 
+Can be replicated on a Raspberry Pi.
+
 ## Prerequisites
 
 - [Multipass](https://multipass.run/)
