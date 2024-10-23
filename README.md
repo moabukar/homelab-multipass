@@ -45,3 +45,15 @@ multipass exec k8s-master -- kubectl get nodes
 ## ArgoCD setup
 
 ![Homelab Multipass ArgoCD](./images/argocd.png)
+
+
+## Debugging stuff
+
+```bash
+multipass shell k8s-master
+
+sudo chmod 644 /etc/rancher/k3s/k3s.yaml
+
+## check
+kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes
+```
